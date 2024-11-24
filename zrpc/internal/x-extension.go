@@ -7,17 +7,17 @@ import (
 type ListenFn func(network, address string) (net.Listener, error)
 
 type srvOptionExt struct {
-	listener net.Listener
+	listenFn ListenFn
 }
 
 // WithListener 是一个用于配置服务器监听器
-func WithListener(l net.Listener) ServerOption {
-	return func(options *rpcServerOptions) { options.ext.listener = l }
+func WithListener(fn ListenFn) ServerOption {
+	return func(options *rpcServerOptions) { options.ext.listenFn = fn }
 }
 func (s *baseRpcServer) newListener() (l net.Listener, err error) {
-	if s.ext.listener == nil {
-		return net.Listen("tcp", s.address)
+	fn := net.Listen
+	if s.ext.listenFn != nil {
+		fn, s.ext.listenFn = s.ext.listenFn, nil
 	}
-	l, s.ext.listener = s.ext.listener, nil
-	return
+	return fn("tcp", s.address)
 }
