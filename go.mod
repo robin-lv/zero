@@ -1,4 +1,4 @@
-module github.com/zeromicro/go-zero
+module github.com/robin-lv/zero
 
 go 1.20
 
