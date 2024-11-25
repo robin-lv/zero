@@ -1,4 +1,4 @@
-module github.com/zeromicro/go-zero
+module github.com/robin-lv/zero
 
 go 1.20
 
@@ -20,6 +20,7 @@ require (
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.9.0
+	github.com/zeromicro/go-zero v1.7.4
 	go.etcd.io/etcd/api/v3 v3.5.15
 	go.etcd.io/etcd/client/v3 v3.5.15
 	go.mongodb.org/mongo-driver v1.17.1
@@ -123,3 +124,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/zeromicro/go-zero v1.7.4 => ./

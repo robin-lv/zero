@@ -2,8 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"net"
-
 	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/internal/health"
 	"google.golang.org/grpc"
@@ -18,6 +16,7 @@ type (
 
 	rpcServerOptions struct {
 		health bool
+		ext    srvOptionExt
 	}
 
 	rpcServer struct {
@@ -45,7 +44,7 @@ func (s *rpcServer) SetName(name string) {
 }
 
 func (s *rpcServer) Start(register RegisterFn) error {
-	lis, err := net.Listen("tcp", s.address)
+	lis, err := s.newListener()
 	if err != nil {
 		return err
 	}
