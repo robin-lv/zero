@@ -125,4 +125,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/zeromicro/go-zero v1.7.4 => ./
+replace github.com/zeromicro/go-zero v1.7.4 => github.com/robin-lv/zero v1.0.0
