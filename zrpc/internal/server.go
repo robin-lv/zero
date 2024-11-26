@@ -29,6 +29,7 @@ type (
 		options            []grpc.ServerOption
 		streamInterceptors []grpc.StreamServerInterceptor
 		unaryInterceptors  []grpc.UnaryServerInterceptor
+		listenFn           ListenFn
 	}
 )
 
@@ -43,6 +44,7 @@ func newBaseRpcServer(address string, rpcServerOpts *rpcServerOptions) *baseRpcS
 		options: []grpc.ServerOption{grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle: defaultConnectionIdleDuration,
 		})},
+		listenFn: rpcServerOpts.listenFn,
 	}
 }
 

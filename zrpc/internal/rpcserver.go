@@ -17,7 +17,8 @@ type (
 	ServerOption func(options *rpcServerOptions)
 
 	rpcServerOptions struct {
-		health bool
+		health   bool
+		listenFn ListenFn
 	}
 
 	rpcServer struct {
@@ -45,7 +46,11 @@ func (s *rpcServer) SetName(name string) {
 }
 
 func (s *rpcServer) Start(register RegisterFn) error {
-	lis, err := net.Listen("tcp", s.address)
+	fn := net.Listen
+	if s.listenFn != nil {
+		fn, s.listenFn = s.listenFn, nil
+	}
+	lis, err := fn("tcp", s.address)
 	if err != nil {
 		return err
 	}
