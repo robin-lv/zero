@@ -4,6 +4,8 @@ import (
 	"github.com/zeromicro/go-zero/zrpc/internal"
 )
 
-func WithZero(l internal.ListenFn) internal.ServerOption {
-	return internal.WithZero(l)
+type ListenFn internal.ListenFn
+
+func WithZero(l ListenFn) internal.ServerOption {
+	return internal.WithZero(internal.ListenFn(l))
 }
