@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -47,6 +48,21 @@ func TestParseForm(t *testing.T) {
 		assert.Nil(t, Parse(r, &v))
 		assert.Equal(t, 0, len(v.NoValue))
 	})
+
+	t.Run("slice with one value on array format", func(t *testing.T) {
+		var v struct {
+			Names string `form:"names"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?names=1,2,3",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.Equal(t, "1,2,3", v.Names)
+		}
+	})
 }
 
 func TestParseFormArray(t *testing.T) {
@@ -88,6 +104,36 @@ func TestParseFormArray(t *testing.T) {
 		}
 	})
 
+	t.Run("slice with empty", func(t *testing.T) {
+		var v struct {
+			Name []string `form:"name,optional"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []string{}, v.Name)
+		}
+	})
+
+	t.Run("slice with empty", func(t *testing.T) {
+		var v struct {
+			Name []string `form:"name,optional"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?name=",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.Empty(t, v.Name)
+		}
+	})
+
 	t.Run("slice with empty and non-empty", func(t *testing.T) {
 		var v struct {
 			Name []string `form:"name"`
@@ -100,6 +146,154 @@ func TestParseFormArray(t *testing.T) {
 		assert.NoError(t, err)
 		if assert.NoError(t, Parse(r, &v)) {
 			assert.ElementsMatch(t, []string{"1"}, v.Name)
+		}
+	})
+
+	t.Run("slice with one value on array format", func(t *testing.T) {
+		var v struct {
+			Names []string `form:"names"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?names=1,2,3",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []string{"1,2,3"}, v.Names)
+		}
+	})
+
+	t.Run("slice with one value on combined array format", func(t *testing.T) {
+		var v struct {
+			Names []string `form:"names"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?names=[1,2,3]&names=4",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []string{"[1,2,3]", "4"}, v.Names)
+		}
+	})
+
+	t.Run("slice with one value on integer array format", func(t *testing.T) {
+		var v struct {
+			Numbers []int `form:"numbers"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?numbers=1,2,3",
+			http.NoBody)
+		assert.NoError(t, err)
+		assert.Error(t, Parse(r, &v))
+	})
+
+	t.Run("slice with one value on array format brackets", func(t *testing.T) {
+		var v struct {
+			Names []string `form:"names"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?names[]=1&names[]=2&names[]=3",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []string{"1", "2", "3"}, v.Names)
+		}
+	})
+
+	t.Run("slice with one empty value on integer array format", func(t *testing.T) {
+		var v struct {
+			Numbers []int `form:"numbers,optional"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?numbers=",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.Empty(t, v.Numbers)
+		}
+	})
+
+	t.Run("slice with one value on integer array format", func(t *testing.T) {
+		var v struct {
+			Numbers []int `form:"numbers,optional"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?numbers=&numbers=2",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []int{2}, v.Numbers)
+		}
+	})
+
+	t.Run("slice with one empty value on float64 array format", func(t *testing.T) {
+		var v struct {
+			Numbers []float64 `form:"numbers,optional"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?numbers=",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.Empty(t, v.Numbers)
+		}
+	})
+
+	t.Run("slice with one value on float64 array format", func(t *testing.T) {
+		var v struct {
+			Numbers []float64 `form:"numbers,optional"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?numbers=&numbers=2",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []float64{2}, v.Numbers)
+		}
+	})
+
+	t.Run("slice with one value", func(t *testing.T) {
+		var v struct {
+			Codes []string `form:"codes"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?codes=aaa,bbb,ccc",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []string{"aaa,bbb,ccc"}, v.Codes)
+		}
+	})
+
+	t.Run("slice with multiple values", func(t *testing.T) {
+		var v struct {
+			Codes []string `form:"codes,arrayComma=false"`
+		}
+
+		r, err := http.NewRequest(
+			http.MethodGet,
+			"/a?codes=aaa,bbb,ccc&codes=ccc,ddd,eee",
+			http.NoBody)
+		assert.NoError(t, err)
+		if assert.NoError(t, Parse(r, &v)) {
+			assert.ElementsMatch(t, []string{"aaa,bbb,ccc", "ccc,ddd,eee"}, v.Codes)
 		}
 	})
 }
@@ -350,6 +544,26 @@ func TestParseJsonBody(t *testing.T) {
 		assert.Equal(t, "apple", v[0].Name)
 		assert.Equal(t, 18, v[0].Age)
 	})
+
+	t.Run("bytes field", func(t *testing.T) {
+		type v struct {
+			Signature []byte `json:"signature,optional"`
+		}
+		v1 := v{
+			Signature: []byte{0x01, 0xff, 0x00},
+		}
+		body, _ := json.Marshal(v1)
+		t.Logf("body:%s", string(body))
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(body)))
+		r.Header.Set(ContentType, header.JsonContentType)
+		var v2 v
+		err := ParseJsonBody(r, &v2)
+		if assert.NoError(t, err) {
+			assert.Greater(t, len(v2.Signature), 0)
+		}
+		t.Logf("%x", v2.Signature)
+		assert.EqualValues(t, v1.Signature, v2.Signature)
+	})
 }
 
 func TestParseRequired(t *testing.T) {
@@ -526,6 +740,42 @@ func TestCustomUnmarshalerStructRequest(t *testing.T) {
 	}{}
 	assert.Nil(t, Parse(r, &v))
 	assert.Equal(t, "hello", v.Foo.Name)
+}
+
+func TestParseJsonStringRequest(t *testing.T) {
+	type GoodsInfo struct {
+		Sku int64 `json:"sku,optional"`
+	}
+
+	type GetReq struct {
+		GoodsList []*GoodsInfo `json:"goods_list"`
+	}
+
+	input := `{"goods_list":"[{\"sku\":11},{\"sku\":22}]"}`
+	r := httptest.NewRequest(http.MethodPost, "/a", strings.NewReader(input))
+	r.Header.Set(ContentType, JsonContentType)
+	var v GetReq
+	assert.NotPanics(t, func() {
+		assert.NoError(t, Parse(r, &v))
+		assert.Equal(t, 2, len(v.GoodsList))
+		assert.ElementsMatch(t, []int64{11, 22}, []int64{v.GoodsList[0].Sku, v.GoodsList[1].Sku})
+	})
+}
+
+type valid1 struct{}
+
+func (v valid1) Validate(*http.Request, any) error { return nil }
+
+type valid2 struct{}
+
+func (v valid2) Validate(*http.Request, any) error { return nil }
+
+func TestSetValidatorTwice(t *testing.T) {
+	// panic: sync/atomic: store of inconsistently typed value into Value
+	assert.NotPanics(t, func() {
+		SetValidator(valid1{})
+		SetValidator(valid2{})
+	})
 }
 
 func BenchmarkParseRaw(b *testing.B) {
